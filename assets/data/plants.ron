@@ -44,7 +44,7 @@
     "WallNut": (
         health: 4000.0,
         sun_cost: 50,
-        cooldown_secs: 50.0,
+        cooldown_secs: 30.0,
         sprite_dir: "textures/plants/wallnut",
         idle_frames: 16,
         cracked1_threshold: 0.667,

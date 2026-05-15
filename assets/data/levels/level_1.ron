@@ -6,23 +6,16 @@
     waves: [
         (
             trigger: Time(30.0),
-            zombies: [
-                (kind: "Normal", row: 2, delay: 0.0),
-                (kind: "Normal", row: 4, delay: 3.0),
-            ],
+            max_points: 500,
         ),
         (
             trigger: Time(60.0),
-            zombies: [
-                (kind: "Normal", row: 0, delay: 0.0),
-                (kind: "Conehead", row: 2, delay: 2.0),
-                (kind: "Normal", row: 4, delay: 4.0),
-            ],
+            max_points: 500,
         ),
         (
             trigger: AllDead,
+            max_points: 0,
             is_final: true,
-            zombies: [],
         ),
     ],
     victory_condition: AllWavesCleared,
