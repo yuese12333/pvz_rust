@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+mod game_data;
 mod states;
 
 use crate::states::GameState;
@@ -26,13 +27,32 @@ use sun::SunPlugin;
 use ui::UiPlugin;
 use zombies::ZombiesPlugin;
 
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+struct DisplayConfig {
+    window_width: f32,
+    window_height: f32,
+    window_title: String,
+    clear_color_rgb: (f32, f32, f32),
+}
+
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
+}
+
 fn main() {
+    let display: DisplayConfig = game_data::load_ron("assets/data/display.ron")
+        .expect("assets/data/display.ron 须存在且为合法 RON");
+    let (cr, cg, cb) = display.clear_color_rgb;
+
     App::new()
+        .insert_resource(ClearColor(Color::srgb(cr, cg, cb)))
         .add_plugins(
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "PvZ Rust".into(),
-                    resolution: (1280.0, 720.0).into(),
+                    title: display.window_title,
+                    resolution: (display.window_width, display.window_height).into(),
                     ..default()
                 }),
                 ..default()
@@ -51,5 +71,6 @@ fn main() {
             UiPlugin,
             AudioPlugin,
         ))
+        .add_systems(Startup, spawn_camera)
         .run();
 }
