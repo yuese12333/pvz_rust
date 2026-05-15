@@ -1,0 +1,25 @@
+{
+    "Normal": (
+        health: 270.0,
+        move_speed: 21.0,
+        attack_damage: 100.0,
+        attack_interval: 1.0,
+        sprite_dir: "textures/zombies/normal",
+        walk_frames: 22,
+        eat_frames: 13,
+        die_frames: 10,
+        score: 100,
+    ),
+    "Conehead": (
+        health: 270.0,
+        armor: 370.0,
+        move_speed: 21.0,
+        attack_damage: 100.0,
+        attack_interval: 1.0,
+        sprite_dir: "textures/zombies/conehead",
+        walk_frames: 22,
+        eat_frames: 13,
+        die_frames: 10,
+        score: 150,
+    ),
+}

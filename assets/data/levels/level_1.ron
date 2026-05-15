@@ -1,0 +1,29 @@
+(
+    background: "textures/background/day.png",
+    bgm: "audio/bgm/level1.ogg",
+    initial_sun: 150,
+    plant_slots: ["Peashooter", "Sunflower", "WallNut"],
+    waves: [
+        (
+            trigger: Time(30.0),
+            zombies: [
+                (kind: "Normal", row: 2, delay: 0.0),
+                (kind: "Normal", row: 4, delay: 3.0),
+            ],
+        ),
+        (
+            trigger: Time(60.0),
+            zombies: [
+                (kind: "Normal", row: 0, delay: 0.0),
+                (kind: "Conehead", row: 2, delay: 2.0),
+                (kind: "Normal", row: 4, delay: 4.0),
+            ],
+        ),
+        (
+            trigger: AllDead,
+            is_final: true,
+            zombies: [],
+        ),
+    ],
+    victory_condition: AllWavesCleared,
+)
