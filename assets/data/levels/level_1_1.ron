@@ -2,7 +2,7 @@
     background: "textures/background/day.png",
     bgm: "audio/bgm/level1.ogg",
     initial_sun: 150,
-    plant_slots: ["Peashooter", "Sunflower", "WallNut"],
+    plant_slots: ["Peashooter"],
     waves: [
         (
             trigger: Time(30.0),

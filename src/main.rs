@@ -1,6 +1,8 @@
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 
 mod game_data;
+mod loading;
 mod states;
 
 use crate::states::GameState;
@@ -18,6 +20,7 @@ mod zombies;
 
 use animations::AnimationsPlugin;
 use audio::AudioPlugin;
+use loading::LoadingPlugin;
 use grid::GridPlugin;
 use levels::LevelsPlugin;
 use plants::PlantsPlugin;
@@ -58,7 +61,9 @@ fn main() {
                 ..default()
             }),
         )
+        .add_plugins(EguiPlugin)
         .init_state::<GameState>()
+        .add_plugins(LoadingPlugin)
         .add_plugins((
             GridPlugin,
             PlantsPlugin,

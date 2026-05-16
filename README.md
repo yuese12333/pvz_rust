@@ -38,8 +38,8 @@ Plants vs. Zombies 完整复刻版，使用 Rust + Bevy 构建，全部美术资
 ## 运行
 
 ```bash
-git clone https://github.com/yuese12333/rust_pvz.git
-cd rust_pvz
+git clone https://github.com/yuese12333/pvz_rust.git
+cd pvz_rust
 cargo run
 ```
 
