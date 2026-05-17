@@ -1,35 +1,26 @@
 use bevy::prelude::*;
 
-use crate::game_data;
-use crate::levels::data::{LevelDef, VictoryCondition, WaveTrigger};
+use crate::levels::load::load_level_validated_or_panic;
+use crate::levels::progress::AdventureProgress;
 use crate::levels::CurrentLevel;
+use crate::plants::PlantsCatalog;
 use crate::states::GameState;
+use crate::zombies::ZombiesCatalog;
 
-/// 关卡加载与波次调度。
+/// 关卡进度、加载与 `Playing` 生命周期。
 pub struct LevelsPlugin;
 
 impl Plugin for LevelsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(GameState::Playing), cleanup_current_level);
+        let progress = AdventureProgress::load_from_save();
+        let zombies =
+            ZombiesCatalog::load_from_manifest_relative("assets/data/zombies.ron");
+        let plants =
+            PlantsCatalog::load_from_manifest_relative("assets/data/plants.ron");
+        load_level_validated_or_panic(&progress.current_level, &zombies, &plants);
 
-        let inner: LevelDef =
-            game_data::load_ron("assets/data/levels/level_1_1.ron").expect(
-                "assets/data/levels/level_1_1.ron 须存在且为合法 RON（冒烟校验）",
-            );
-        assert!(
-            !inner.background.is_empty(),
-            "level_1_1 须有 background 路径"
-        );
-        assert_eq!(inner.waves.len(), 3);
-        assert_eq!(inner.waves[0].max_points, 500);
-        assert!(matches!(
-            inner.waves[0].trigger,
-            WaveTrigger::Time(t) if (t - 30.0).abs() < f32::EPSILON
-        ));
-        assert!(matches!(
-            inner.victory_condition,
-            VictoryCondition::AllWavesCleared
-        ));
+        app.insert_resource(progress)
+            .add_systems(OnExit(GameState::Playing), cleanup_current_level);
     }
 }
 

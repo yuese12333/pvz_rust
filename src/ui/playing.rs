@@ -5,7 +5,7 @@ use bevy_egui::{egui, EguiContexts};
 
 use crate::levels::CurrentLevel;
 use crate::states::GameState;
-use crate::ui::AdventureProgress;
+use crate::levels::AdventureProgress;
 
 /// 注册 `Playing` 相关系统。
 pub fn register(app: &mut App) {
@@ -37,7 +37,7 @@ fn draw_playing_placeholder_ui(
         ui.horizontal(|ui| {
             ui.label(format!("Level: {}", progress.current_level));
             ui.separator();
-            ui.label(format!("Sun: {}", level.inner.initial_sun));
+            ui.label(format!("Initial Sun: {}", level.inner.initial_sun));
             ui.separator();
             ui.label("(Gameplay WIP)");
             if ui.button("Back to Menu").clicked() {

@@ -1,5 +1,5 @@
 {
-    "Normal": (
+    "Zombie": (
         body_hp: 270.0,
         secs_per_cell_min: 4.1,
         secs_per_cell_max: 5.3,
@@ -23,11 +23,11 @@
         walk_frames: 12,
         eat_frames: 12,
         die_frames: 10,
-        score: 1,
-        weight: 100,
-        min_wave: 10,
+        score: 0,
+        weight: 0,
+        min_wave: 1,
     ),
-    "Conehead": (
+    "ConeheadZombie": (
         tier1_armor_hp: Some(370.0),
         body_hp: 270.0,
         secs_per_cell_min: 4.1,
@@ -42,7 +42,7 @@
         weight: 2000,
         min_wave: 3,
     ),
-    "PoleVaultZombie": (
+    "PoleVaultingZombie": (
         body_hp: 720.0,
         secs_per_cell_min: 2.4,
         secs_per_cell_max: 2.6,

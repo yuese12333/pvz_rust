@@ -1,15 +1,19 @@
-//! 植物数据层：与 `game_mechanics_and_values.md` 及 `assets/data/plants.ron` 对齐（#1～#10）。
-//! 网格 / 商店 / 子弹等逻辑仍在各自 Plugin 中，当前多为占位，由 `main` 统一注册。
+//! 植物数据层：与 `mechanics_and_values.md` 及 `assets/data/plants.ron` 对齐。
 
 pub mod plugin;
+pub mod stats;
+pub mod targeting;
 
 pub use plugin::PlantsPlugin;
+pub use stats::{validate_plant_archetype, PlantArchetypeOverride, PlantArchetypeStats};
+pub use targeting::PlantTargeting;
 
 use std::collections::HashMap;
 
 use bevy::prelude::*;
+use stats::validate_plant_entry;
 
-/// 植物类型（与 `assets/data/plants.ron` 键名一致，顺序与 `game_mechanics_and_values.md` #1～#10 一致）。
+/// 植物类型（与 `assets/data/plants.ron` 键名一致）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlantType {
     /// #1 豌豆射手。
@@ -35,7 +39,7 @@ pub enum PlantType {
 }
 
 impl PlantType {
-    /// 文档固定列举的十种植物，用于启动时校验 RON。
+    /// 代码中登记的植物种类，用于启动时校验 `plants.ron` 键齐全。
     pub const ALL: [Self; 10] = [
         Self::Peashooter,
         Self::Sunflower,
@@ -67,11 +71,10 @@ impl PlantType {
     }
 }
 
-/// 启动时从 `assets/data/plants.ron` 读入并校验：须含文档 #1～#10 全部键。
+/// 启动时从 `assets/data/plants.ron` 读入并校验：须含 [`PlantType::ALL`] 全部键。
 #[derive(Resource, Debug)]
 pub struct PlantsCatalog {
-    /// 各植物条目的 RON 值（结构随植物种类不同，后续玩法再强类型解析）。
-    entries: HashMap<String, ron::value::Value>,
+    entries: HashMap<String, PlantArchetypeStats>,
 }
 
 impl PlantsCatalog {
@@ -81,32 +84,33 @@ impl PlantsCatalog {
         let full = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(path);
         let raw = std::fs::read_to_string(&full)
             .unwrap_or_else(|e| panic!("读取植物配置 {full:?}: {e}"));
-        let entries: HashMap<String, ron::value::Value> = ron::de::from_str(&raw)
+        let entries: HashMap<String, PlantArchetypeStats> = ron::de::from_str(&raw)
             .unwrap_or_else(|e| panic!("解析植物配置 {full:?}: {e}"));
-        for ty in PlantType::ALL {
-            let key = ty.ron_key();
-            if !entries.contains_key(key) {
-                panic!("plants.ron 缺少文档对应条目: {key}");
-            }
-        }
         if entries.len() != PlantType::ALL.len() {
             let keys: Vec<_> = entries.keys().cloned().collect();
             panic!(
-                "plants.ron 仅应包含文档 #1～#10 共 {} 条，实际 {} 条: {keys:?}",
+                "plants.ron 条目数须与 PlantType::ALL 一致（{}），实际 {} 条: {keys:?}",
                 PlantType::ALL.len(),
                 entries.len()
             );
         }
+        for ty in PlantType::ALL {
+            let key = ty.ron_key();
+            let stats = entries
+                .get(key)
+                .unwrap_or_else(|| panic!("plants.ron 缺少 PlantType::ALL 对应条目: {key}"));
+            validate_plant_entry(ty, stats);
+        }
         Self { entries }
     }
 
-    /// 按枚举取一条植物配置（RON 值）。
+    /// 按枚举取一条植物配置。
     #[must_use]
-    pub fn get(&self, ty: PlantType) -> Option<&ron::value::Value> {
+    pub fn get(&self, ty: PlantType) -> Option<&PlantArchetypeStats> {
         self.entries.get(ty.ron_key())
     }
 
-    /// 已加载的植物条目数（启动校验后恒为 10）。
+    /// 已加载的植物条目数（启动校验后与 [`PlantType::ALL`] 长度一致）。
     #[must_use]
     pub fn len(&self) -> usize {
         self.entries.len()

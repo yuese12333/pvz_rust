@@ -1,7 +1,10 @@
 //! 僵尸数据与通用规则（与 `mechanics_and_values.md`、`assets/data/zombies.ron` 对齐）。
 
+pub mod hp;
 pub mod plugin;
 
+#[allow(unused_imports)]
+pub use hp::{apply_dying_drain, update_stage_after_hp_change, ZombieBodyHp, ZombieHpStage};
 pub use plugin::ZombiesPlugin;
 
 use std::collections::HashMap;
@@ -14,32 +17,41 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ZombieType {
     /// #1 普通僵尸。
-    Normal,
+    Zombie,
     /// #2 旗帜僵尸。
     FlagZombie,
     /// #3 路障僵尸。
-    Conehead,
+    ConeheadZombie,
     /// #4 撑杆跳僵尸。
-    PoleVaultZombie,
+    PoleVaultingZombie,
 }
 
 impl ZombieType {
     /// 当前在目录中有独立条目的种类（与 `zombies.ron` 键一致；扩展时在此追加）。
     pub const ALL: [Self; 4] = [
-        Self::Normal,
+        Self::Zombie,
         Self::FlagZombie,
-        Self::Conehead,
-        Self::PoleVaultZombie,
+        Self::ConeheadZombie,
+        Self::PoleVaultingZombie,
     ];
 
     /// RON 中的字符串键名。
     #[must_use]
     pub fn ron_key(self) -> &'static str {
         match self {
-            Self::Normal => "Normal",
+            Self::Zombie => "Zombie",
             Self::FlagZombie => "FlagZombie",
-            Self::Conehead => "Conehead",
-            Self::PoleVaultZombie => "PoleVaultZombie",
+            Self::ConeheadZombie => "ConeheadZombie",
+            Self::PoleVaultingZombie => "PoleVaultingZombie",
+        }
+    }
+
+    /// 是否适用机制篇 §2.2 本体三段血量与垂死（例外种类见文档 §2.2 段首）。
+    #[must_use]
+    pub fn has_segmented_hp(self) -> bool {
+        match self {
+            Self::Zombie | Self::FlagZombie | Self::ConeheadZombie | Self::PoleVaultingZombie => true,
+            // 扩展后在此追加例外并返回 false，例如：Self::Gargantuar => false,
         }
     }
 }
@@ -52,13 +64,13 @@ impl ZombieType {
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct ZombieArchetypeStats {
-    /// A：二类防具（Shield，持握式）血量；无则不序列化。
+    /// 二类防具（Shield，持握式）血量；无则不序列化。
     #[serde(default)]
     pub tier2_armor_hp: Option<f32>,
-    /// B：一类防具（Headwear，头戴式）血量。
+    /// 一类防具（Headwear，头戴式）血量。
     #[serde(default)]
     pub tier1_armor_hp: Option<f32>,
-    /// C：本体血量（必有）。
+    /// 本体血量（必有）。
     pub body_hp: f32,
     /// 每格移动时间下限（秒），含端点。
     pub secs_per_cell_min: f64,
@@ -91,7 +103,7 @@ impl ZombieArchetypeStats {
         self.score > 0 && self.weight > 0
     }
 
-    /// 按文档规则生成生命值展示串：A（二类 Shield）+ B（一类 Headwear）+ C；无 A/B 则不写对应段。
+    /// 按文档规则生成生命值展示串：二类 + 一类 + 本体；无则省略对应段。
     #[must_use]
     pub fn hp_display_string(&self) -> String {
         format_zombie_hp_display(
@@ -134,7 +146,7 @@ impl ZombieArchetypeStats {
     }
 }
 
-/// 生命值展示：A（二类 Shield）+ B（一类 Headwear）+ C（本体）；仅有 C 时只写 `270` 等形式。
+/// 生命值展示：二类 + 一类 + 本体；仅有本体时只写 `270` 等形式。
 #[must_use]
 pub fn format_zombie_hp_display(
     tier2_armor_hp: Option<f32>,
@@ -169,16 +181,37 @@ fn fmt_hp_component(v: f32) -> String {
     }
 }
 
+/// 校验合并后的僵尸数值（全局或关卡覆盖后均可调用）。
+pub fn validate_zombie_archetype(ty: ZombieType, stats: &ZombieArchetypeStats) {
+    validate_zombie_entry(ty, stats);
+}
+
 fn validate_zombie_entry(ty: ZombieType, stats: &ZombieArchetypeStats) {
     let key = ty.ron_key();
-    if stats.score <= 0 {
-        panic!("{key} 的 score 须 > 0");
+    if stats.body_hp <= 0.0 {
+        panic!("{key} 的 body_hp 须 > 0");
     }
-    if stats.weight == 0 {
-        panic!("{key} 的 weight 须 > 0");
+    if stats.secs_per_cell_min > stats.secs_per_cell_max {
+        panic!(
+            "{key} 的 secs_per_cell_min={} 不能大于 secs_per_cell_max={}",
+            stats.secs_per_cell_min, stats.secs_per_cell_max
+        );
     }
-    if stats.min_wave < 1 {
-        panic!("{key} 的 min_wave 须 >= 1");
+    if stats.score < 0 {
+        panic!("{key} 的 score 不能为负数");
+    }
+
+    let in_pool = stats.participates_in_point_spawn_pool();
+    let script_only = stats.score <= 0 && stats.weight == 0;
+    if !in_pool && !script_only {
+        panic!(
+            "{key} 的 score/weight 不一致：参与点数池须 score>0 且 weight>0；\
+             仅脚本/事件生成须 score<=0 且 weight=0（当前 score={}, weight={}）",
+            stats.score, stats.weight
+        );
+    }
+    if in_pool && stats.min_wave < 1 {
+        panic!("{key} 参与点数池时 min_wave 须 >= 1");
     }
 }
 
@@ -261,6 +294,54 @@ mod tests {
             format_zombie_hp_display(Some(100.0), Some(200.0), 270.0),
             "100（二类）+200（一类）+270"
         );
+    }
+
+    #[test]
+    fn script_only_spawn_fields_pass_validation() {
+        let stats = ZombieArchetypeStats {
+            tier2_armor_hp: None,
+            tier1_armor_hp: None,
+            body_hp: 270.0,
+            secs_per_cell_min: 3.7,
+            secs_per_cell_max: 3.7,
+            post_vault_secs_per_cell_min: None,
+            post_vault_secs_per_cell_max: None,
+            attack_damage: 100.0,
+            attack_interval: 1.0,
+            sprite_dir: "textures/zombies/flag".to_string(),
+            walk_frames: 1,
+            eat_frames: 1,
+            die_frames: 1,
+            score: 0,
+            weight: 0,
+            min_wave: 1,
+        };
+        validate_zombie_archetype(ZombieType::FlagZombie, &stats);
+        assert!(!stats.participates_in_point_spawn_pool());
+    }
+
+    #[test]
+    #[should_panic(expected = "score/weight 不一致")]
+    fn ambiguous_spawn_fields_fail_validation() {
+        let stats = ZombieArchetypeStats {
+            tier2_armor_hp: None,
+            tier1_armor_hp: None,
+            body_hp: 270.0,
+            secs_per_cell_min: 4.1,
+            secs_per_cell_max: 5.3,
+            post_vault_secs_per_cell_min: None,
+            post_vault_secs_per_cell_max: None,
+            attack_damage: 100.0,
+            attack_interval: 1.0,
+            sprite_dir: String::new(),
+            walk_frames: 1,
+            eat_frames: 1,
+            die_frames: 1,
+            score: 100,
+            weight: 0,
+            min_wave: 1,
+        };
+        validate_zombie_archetype(ZombieType::Zombie, &stats);
     }
 
     #[test]

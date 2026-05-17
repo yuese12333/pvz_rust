@@ -225,6 +225,7 @@ mod tests {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
         let paths = collect_preload_paths(&root);
         assert!(paths.iter().any(|p| p == "data/display.ron"));
+        assert!(paths.iter().any(|p| p == "data/game_config.ron"));
         assert!(paths.iter().any(|p| p == "data/plants.ron"));
         assert!(!paths.iter().any(|p| p.contains("levels/")));
     }

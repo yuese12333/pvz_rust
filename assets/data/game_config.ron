@@ -1,0 +1,5 @@
+(
+    hp_threshold_high: 0.667,
+    hp_threshold_low: 0.333,
+    dying_drain_hp_per_sec: 30.0,
+)

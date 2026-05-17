@@ -4,10 +4,10 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
-use crate::game_data;
-use crate::levels::CurrentLevel;
+use crate::levels::{load_level_validated, AdventureProgress, CurrentLevel};
+use crate::plants::PlantsCatalog;
 use crate::states::GameState;
-use crate::ui::AdventureProgress;
+use crate::zombies::ZombiesCatalog;
 
 /// 主菜单 UI 产生的待处理操作（由逻辑系统消费，渲染层只写入此资源）。
 #[derive(Resource, Default)]
@@ -31,8 +31,13 @@ pub fn register(app: &mut App) {
         );
 }
 
-fn enter_main_menu(mut commands: Commands) {
-    commands.insert_resource(AdventureProgress::load_from_save());
+fn enter_main_menu(mut commands: Commands, progress: Option<ResMut<AdventureProgress>>) {
+    let fresh = AdventureProgress::load_from_save();
+    if let Some(mut p) = progress {
+        *p = fresh;
+    } else {
+        commands.insert_resource(fresh);
+    }
     commands.init_resource::<MainMenuPending>();
 }
 
@@ -98,6 +103,8 @@ fn draw_main_menu_ui(mut contexts: EguiContexts, mut pending: ResMut<MainMenuPen
 fn process_main_menu_actions(
     mut pending: ResMut<MainMenuPending>,
     progress: Res<AdventureProgress>,
+    zombies: Res<ZombiesCatalog>,
+    plants: Res<PlantsCatalog>,
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
     mut exit: EventWriter<AppExit>,
@@ -113,18 +120,17 @@ fn process_main_menu_actions(
     }
     pending.start_adventure = false;
 
-    let path = progress.as_ref().level_manifest_path();
-    let level = match game_data::load_ron::<crate::levels::LevelDef>(&path) {
+    let level_id = progress.current_level.clone();
+    let level = match load_level_validated(&level_id, zombies.as_ref(), plants.as_ref()) {
         Ok(def) => def,
         Err(e) => {
-            bevy::log::error!("加载关卡 {path} 失败: {e}");
+            bevy::log::error!("加载关卡 {level_id} 失败: {e}");
             return;
         }
     };
 
     info!(
-        "开始冒险：加载关卡 {}（initial_sun={}, waves={}）",
-        progress.current_level,
+        "开始冒险：加载关卡 {level_id}（initial_sun={}, waves={}）",
         level.initial_sun,
         level.waves.len()
     );

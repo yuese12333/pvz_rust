@@ -13,10 +13,7 @@ impl Plugin for PlantsPlugin {
             PlantType::ALL.len(),
             "plants.ron 条目数应与 PlantType::ALL 一致"
         );
-        assert!(
-            catalog.get(PlantType::Peashooter).is_some(),
-            "Peashooter 条目须可查询"
-        );
+
         app.insert_resource(catalog);
     }
 }

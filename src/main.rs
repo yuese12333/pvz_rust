@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
+mod game_config;
 mod game_data;
+mod save;
 mod loading;
 mod states;
 
@@ -19,6 +21,7 @@ mod ui;
 mod zombies;
 
 use animations::AnimationsPlugin;
+use game_config::GameConfigPlugin;
 use audio::AudioPlugin;
 use loading::LoadingPlugin;
 use grid::GridPlugin;
@@ -64,6 +67,7 @@ fn main() {
         .add_plugins(EguiPlugin)
         .init_state::<GameState>()
         .add_plugins(LoadingPlugin)
+        .add_plugins(GameConfigPlugin)
         .add_plugins((
             GridPlugin,
             PlantsPlugin,

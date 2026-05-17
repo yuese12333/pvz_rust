@@ -10,6 +10,7 @@ serde = { version = "1", features = ["derive"] }
 ron = "0.8"
 rand = "0.8"
 walkdir = "2"
+dirs = "5"
 
 [profile.dev]
 opt-level = 1
