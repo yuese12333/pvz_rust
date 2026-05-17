@@ -131,6 +131,7 @@ pub struct WaveDef {
 /// 波次触发条件。
 #[derive(Debug, Clone, Deserialize)]
 pub enum WaveTrigger {
+    #[allow(dead_code)]
     Time(f32),
     AllDead,
 }

@@ -6,7 +6,7 @@ pub mod targeting;
 
 pub use plugin::PlantsPlugin;
 pub use stats::{validate_plant_archetype, PlantArchetypeOverride, PlantArchetypeStats};
-pub use targeting::PlantTargeting;
+// pub use targeting::PlantTargeting;
 
 use std::collections::HashMap;
 

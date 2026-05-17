@@ -4,7 +4,8 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
-use crate::levels::{load_level_validated, AdventureProgress, CurrentLevel};
+use crate::levels::load::load_level_validated;
+use crate::levels::{AdventureProgress, CurrentLevel};
 use crate::plants::PlantsCatalog;
 use crate::states::GameState;
 use crate::zombies::ZombiesCatalog;

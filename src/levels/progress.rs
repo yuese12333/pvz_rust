@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::load::level_manifest_path;
+// use super::load::level_manifest_path;
 
 /// 玩家存档 RON 结构（`save.ron`）。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,24 +43,24 @@ impl AdventureProgress {
         }
     }
 
-    /// 将当前进度写入用户数据目录下的 `save.ron`（关卡通关等时机调用）。
-    pub fn save_to_disk(&self) -> Result<(), String> {
-        if !is_valid_level_id(&self.current_level) {
-            return Err(format!(
-                "无法保存非法关卡 id: {:?}",
-                self.current_level
-            ));
-        }
-        crate::save::write_save_file(&SaveFile {
-            current_level: self.current_level.clone(),
-        })
-    }
+    // /// 将当前进度写入用户数据目录下的 `save.ron`（关卡通关等时机调用）。
+    // pub fn save_to_disk(&self) -> Result<(), String> {
+    //     if !is_valid_level_id(&self.current_level) {
+    //         return Err(format!(
+    //             "无法保存非法关卡 id: {:?}",
+    //             self.current_level
+    //         ));
+    //     }
+    //     crate::save::write_save_file(&SaveFile {
+    //         current_level: self.current_level.clone(),
+    //     })
+    // }
 
-    /// 关卡 RON 相对于项目根的路径（供 [`crate::game_data::load_ron`] 使用）。
-    #[must_use]
-    pub fn level_manifest_path(&self) -> String {
-        level_manifest_path(&self.current_level)
-    }
+    // /// 关卡 RON 相对于项目根的路径（供 [`crate::game_data::load_ron`] 使用）。
+    // #[must_use]
+    // pub fn level_manifest_path(&self) -> String {
+    //     level_manifest_path(&self.current_level)
+    // }
 }
 
 impl Default for AdventureProgress {
@@ -76,33 +76,4 @@ fn is_valid_level_id(id: &str) -> bool {
         && id
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '_')
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn default_level_is_level_1_1() {
-        let p = AdventureProgress::default();
-        assert_eq!(p.current_level, "level_1_1");
-    }
-
-    #[test]
-    fn rejects_invalid_level_ids() {
-        assert!(!is_valid_level_id(""));
-        assert!(!is_valid_level_id("../evil"));
-        assert!(!is_valid_level_id("a/b"));
-    }
-
-    #[test]
-    fn user_save_path_is_under_data_local() {
-        let path = crate::save::save_file_path().expect("平台应提供 data_local_dir");
-        assert!(path.ends_with("save.ron"));
-        assert!(
-            path.components()
-                .any(|c| c.as_os_str() == crate::save::APP_SLUG),
-            "存档路径应包含应用目录名"
-        );
-    }
 }

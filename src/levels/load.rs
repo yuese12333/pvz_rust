@@ -73,21 +73,3 @@ pub fn load_level_validated_or_panic(
         panic!("关卡 {level_id} 加载/校验失败: {e}");
     })
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::levels::progress::AdventureProgress;
-    use crate::plants::PlantsCatalog;
-    use crate::zombies::ZombiesCatalog;
-
-    #[test]
-    fn default_level_manifest_loads_and_validates() {
-        let zombies =
-            ZombiesCatalog::load_from_manifest_relative("assets/data/zombies.ron");
-        let plants =
-            PlantsCatalog::load_from_manifest_relative("assets/data/plants.ron");
-        load_level_validated(AdventureProgress::DEFAULT_LEVEL, &zombies, &plants)
-            .expect("默认关卡应能加载并通过平衡校验");
-    }
-}

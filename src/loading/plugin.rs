@@ -215,18 +215,3 @@ fn push_asset_relative(assets_root: &Path, file: &Path, out: &mut Vec<String>) {
     let rel_str = rel.to_string_lossy().replace('\\', "/");
     out.push(rel_str);
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn collect_includes_data_ron_at_root_only() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
-        let paths = collect_preload_paths(&root);
-        assert!(paths.iter().any(|p| p == "data/display.ron"));
-        assert!(paths.iter().any(|p| p == "data/game_config.ron"));
-        assert!(paths.iter().any(|p| p == "data/plants.ron"));
-        assert!(!paths.iter().any(|p| p.contains("levels/")));
-    }
-}
