@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::armors::ArmorsCatalog;
 use crate::levels::load::load_level_validated_or_panic;
 use crate::levels::progress::AdventureProgress;
 use crate::levels::CurrentLevel;
@@ -13,11 +14,10 @@ pub struct LevelsPlugin;
 impl Plugin for LevelsPlugin {
     fn build(&self, app: &mut App) {
         let progress = AdventureProgress::load_from_save();
-        let zombies =
-            ZombiesCatalog::load_from_manifest_relative("assets/data/zombies.ron");
-        let plants =
-            PlantsCatalog::load_from_manifest_relative("assets/data/plants.ron");
-        load_level_validated_or_panic(&progress.current_level, &zombies, &plants);
+        let armors = app.world().resource::<ArmorsCatalog>();
+        let zombies = app.world().resource::<ZombiesCatalog>();
+        let plants = app.world().resource::<PlantsCatalog>();
+        load_level_validated_or_panic(&progress.current_level, zombies, plants, armors);
 
         app.insert_resource(progress)
             .add_systems(OnExit(GameState::Playing), cleanup_current_level);

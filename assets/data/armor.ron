@@ -1,0 +1,27 @@
+{
+    "Conehead": (
+        tier: Tier1,
+        hp: 370.0,
+        sprite_dir: "textures/armor/conehead",
+    ),
+    "Buckethead": (
+        tier: Tier1,
+        hp: 1100.0,
+        sprite_dir: "textures/armor/buckethead",
+    ),
+    "Newspaper": (
+        tier: Tier2,
+        hp: 150.0,
+        sprite_dir: "textures/armor/newspaper",
+    ),
+    "ScreenDoor": (
+        tier: Tier2,
+        hp: 1100.0,
+        sprite_dir: "textures/armor/screendoor",
+    ),
+    "FootballHelmet": (
+        tier: Tier1,
+        hp: 1400.0,
+        sprite_dir: "textures/armor/footballhelmet",
+    ),
+}

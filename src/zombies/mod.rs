@@ -1,5 +1,6 @@
 //! 僵尸数据与通用规则（与 `mechanics_and_values.md`、`assets/data/zombies.ron` 对齐）。
 
+pub mod dancing;
 pub mod hp;
 pub mod plugin;
 
@@ -11,6 +12,8 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use serde::Deserialize;
+
+use crate::armors::ArmorsCatalog;
 
 /// 僵尸种类（与 `assets/data/zombies.ron` 键名一致）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -25,16 +28,31 @@ pub enum ZombieType {
     PoleVaultingZombie,
     /// #5 铁桶僵尸。
     BucketheadZombie,
+    /// #6 读报僵尸。
+    NewspaperZombie,
+    /// #7 铁门僵尸。
+    ScreenDoorZombie,
+    /// #8 橄榄球僵尸。
+    FootballZombie,
+    /// #9 舞王僵尸。
+    DancingZombie,
+    /// #10 伴舞僵尸。
+    BackupDancerZombie,
 }
 
 impl ZombieType {
     /// 当前在目录中有独立条目的种类（与 `zombies.ron` 键一致；扩展时在此追加）。
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 10] = [
         Self::Zombie,
         Self::FlagZombie,
         Self::ConeheadZombie,
         Self::PoleVaultingZombie,
         Self::BucketheadZombie,
+        Self::NewspaperZombie,
+        Self::ScreenDoorZombie,
+        Self::FootballZombie,
+        Self::DancingZombie,
+        Self::BackupDancerZombie,
     ];
 
     /// RON 中的字符串键名。
@@ -46,7 +64,26 @@ impl ZombieType {
             Self::ConeheadZombie => "ConeheadZombie",
             Self::PoleVaultingZombie => "PoleVaultingZombie",
             Self::BucketheadZombie => "BucketheadZombie",
+            Self::NewspaperZombie => "NewspaperZombie",
+            Self::ScreenDoorZombie => "ScreenDoorZombie",
+            Self::FootballZombie => "FootballZombie",
+            Self::DancingZombie => "DancingZombie",
+            Self::BackupDancerZombie => "BackupDancerZombie",
         }
+    }
+
+    /// 是否为舞王（含状态机，见机制篇 §3）。
+    #[must_use]
+    #[allow(dead_code)]
+    pub fn is_dancing_king(self) -> bool {
+        matches!(self, Self::DancingZombie)
+    }
+
+    /// 是否为伴舞（仅由舞王召唤生成）。
+    #[must_use]
+    #[allow(dead_code)]
+    pub fn is_backup_dancer(self) -> bool {
+        matches!(self, Self::BackupDancerZombie)
     }
 
     // /// 是否适用机制篇 §2.2 本体三段血量与垂死（例外种类见文档 §2.2 段首）。
@@ -71,24 +108,21 @@ impl ZombieType {
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct ZombieArchetypeStats {
-    /// 二类防具（Shield，持握式）血量；无则不序列化。
+    /// 防具键名，对应 `armor.ron` 条目；无防具为 `None`。
     #[serde(default)]
-    pub tier2_armor_hp: Option<f32>,
-    /// 一类防具（Headwear，头戴式）血量。
-    #[serde(default)]
-    pub tier1_armor_hp: Option<f32>,
+    pub armor: Option<String>,
     /// 本体血量（必有）。
     pub body_hp: f32,
     /// 每格移动时间下限（秒），含端点。
     pub secs_per_cell_min: f64,
     /// 每格移动时间上限（秒），含端点。
     pub secs_per_cell_max: f64,
-    /// 失去撑杆后的每格秒数下限；与 `post_vault_secs_per_cell_max` 同时为 `Some` 时，由 [`Self::roll_post_vault_secs_per_cell`] 使用（如撑杆跳僵尸落地后与普通僵尸同速区间）。
+    /// 状态切换后的每格秒数下限（如撑杆落地、读报狂暴、舞王舞蹈-移动循环）；与 `state_secs_per_cell_max` 同时为 `Some` 时由玩法逻辑读取。
     #[serde(default)]
-    pub post_vault_secs_per_cell_min: Option<f64>,
-    /// 失去撑杆后的每格秒数上限。
+    pub state_secs_per_cell_min: Option<f64>,
+    /// 状态切换后的每格秒数上限。
     #[serde(default)]
-    pub post_vault_secs_per_cell_max: Option<f64>,
+    pub state_secs_per_cell_max: Option<f64>,
     pub attack_damage: f32,
     pub attack_interval: f64,
     pub sprite_dir: String,
@@ -109,49 +143,18 @@ impl ZombieArchetypeStats {
     pub fn participates_in_point_spawn_pool(&self) -> bool {
         self.score > 0 && self.weight > 0
     }
-
-    // /// 按文档规则生成生命值展示串：二类 + 一类 + 本体；无则省略对应段。
-    // #[must_use]
-    // pub fn hp_display_string(&self) -> String {
-    //     format_zombie_hp_display(
-    //         self.tier2_armor_hp,
-    //         self.tier1_armor_hp,
-    //         self.body_hp,
-    //     )
-    // }
-
-    // /// 在 `[secs_per_cell_min, secs_per_cell_max]` 内随机每格耗时（秒），出场调用一次后写入实体并固定。
-    // #[must_use]
-    // pub fn roll_secs_per_cell<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 { ... }
-
-    // /// 失去撑杆后每格耗时（秒），在 `[post_vault_secs_per_cell_min, post_vault_secs_per_cell_max]` 内随机；未配置时返回 `None`。
-    // #[must_use]
-    // pub fn roll_post_vault_secs_per_cell<R: Rng + ?Sized>(&self, rng: &mut R) -> Option<f64> {
-    //     let (Some(lo), Some(hi)) = (
-    //         self.post_vault_secs_per_cell_min,
-    //         self.post_vault_secs_per_cell_max,
-    //     ) else {
-    //         return None;
-    //     };
-    //     if lo > hi {
-    //         panic!(
-    //             "post_vault 每格秒数无效: min={lo} > max={hi}（sprite_dir={})",
-    //             self.sprite_dir
-    //         );
-    //     }
-    //     Some(rng.gen_range(lo..=hi))
-    // }
 }
-
-// /// 生命值展示：二类 + 一类 + 本体；仅有本体时只写 `270` 等形式。
-// pub fn format_zombie_hp_display(...) -> String { ... }
 
 /// 校验合并后的僵尸数值（全局或关卡覆盖后均可调用）。
-pub fn validate_zombie_archetype(ty: ZombieType, stats: &ZombieArchetypeStats) {
-    validate_zombie_entry(ty, stats);
+pub fn validate_zombie_archetype(
+    ty: ZombieType,
+    stats: &ZombieArchetypeStats,
+    armors: &ArmorsCatalog,
+) {
+    validate_zombie_entry(ty, stats, armors);
 }
 
-fn validate_zombie_entry(ty: ZombieType, stats: &ZombieArchetypeStats) {
+fn validate_zombie_entry(ty: ZombieType, stats: &ZombieArchetypeStats, armors: &ArmorsCatalog) {
     let key = ty.ron_key();
     if stats.body_hp <= 0.0 {
         panic!("{key} 的 body_hp 须 > 0");
@@ -178,6 +181,27 @@ fn validate_zombie_entry(ty: ZombieType, stats: &ZombieArchetypeStats) {
     if in_pool && stats.min_wave < 1 {
         panic!("{key} 参与点数池时 min_wave 须 >= 1");
     }
+    if let Some(armor_key) = &stats.armor {
+        if armor_key.is_empty() {
+            panic!("{key} 的 armor 键名不能为空字符串");
+        }
+        if armors.get_by_key(armor_key).is_none() {
+            panic!("{key} 的 armor=\"{armor_key}\" 须在 armor.ron 中存在");
+        }
+    }
+    if ty == ZombieType::DancingZombie {
+        let (Some(lo), Some(hi)) = (
+            stats.state_secs_per_cell_min,
+            stats.state_secs_per_cell_max,
+        ) else {
+            panic!("{key} 须配置 state_secs_per_cell_*（舞蹈-移动循环移速）");
+        };
+        if lo > hi {
+            panic!(
+                "{key} 的 state_secs_per_cell_min={lo} 不能大于 state_secs_per_cell_max={hi}"
+            );
+        }
+    }
 }
 
 /// 启动时加载 `assets/data/zombies.ron` 并校验 [`ZombieType::ALL`] 条目齐全且配置合法。
@@ -189,7 +213,7 @@ pub struct ZombiesCatalog {
 impl ZombiesCatalog {
     /// 从项目根相对路径读取；缺少任一种类或配置非法时 panic。
     #[must_use]
-    pub fn load_from_manifest_relative(path: &str) -> Self {
+    pub fn load_from_manifest_relative(path: &str, armors: &ArmorsCatalog) -> Self {
         let full = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(path);
         let raw = std::fs::read_to_string(&full)
             .unwrap_or_else(|e| panic!("读取僵尸配置 {full:?}: {e}"));
@@ -208,7 +232,7 @@ impl ZombiesCatalog {
             let stats = entries
                 .get(key)
                 .unwrap_or_else(|| panic!("zombies.ron 须包含条目: {key}"));
-            validate_zombie_entry(ty, stats);
+            validate_zombie_entry(ty, stats, armors);
         }
         Self { entries }
     }

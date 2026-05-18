@@ -4,6 +4,7 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
+use crate::armors::ArmorsCatalog;
 use crate::levels::load::load_level_validated;
 use crate::levels::{AdventureProgress, CurrentLevel};
 use crate::plants::PlantsCatalog;
@@ -108,6 +109,7 @@ fn process_main_menu_actions(
     progress: Res<AdventureProgress>,
     zombies: Res<ZombiesCatalog>,
     plants: Res<PlantsCatalog>,
+    armors: Res<ArmorsCatalog>,
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
     mut exit: MessageWriter<AppExit>,
@@ -124,7 +126,12 @@ fn process_main_menu_actions(
     pending.start_adventure = false;
 
     let level_id = progress.current_level.clone();
-    let level = match load_level_validated(&level_id, zombies.as_ref(), plants.as_ref()) {
+    let level = match load_level_validated(
+        &level_id,
+        zombies.as_ref(),
+        plants.as_ref(),
+        armors.as_ref(),
+    ) {
         Ok(def) => def,
         Err(e) => {
             bevy::log::error!("加载关卡 {level_id} 失败: {e}");

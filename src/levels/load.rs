@@ -3,6 +3,7 @@
 use crate::game_data;
 use crate::levels::data::LevelDef;
 use crate::levels::level_balance::validate_level_balance_config;
+use crate::armors::ArmorsCatalog;
 use crate::plants::PlantsCatalog;
 use crate::zombies::ZombiesCatalog;
 
@@ -57,9 +58,10 @@ pub fn load_level_validated(
     level_id: &str,
     zombies: &ZombiesCatalog,
     plants: &PlantsCatalog,
+    armors: &ArmorsCatalog,
 ) -> Result<LevelDef, LoadLevelError> {
     let def = load_level_manifest(level_id)?;
-    validate_level_balance_config(&def, zombies, plants);
+    validate_level_balance_config(&def, zombies, plants, armors);
     Ok(def)
 }
 
@@ -68,8 +70,9 @@ pub fn load_level_validated_or_panic(
     level_id: &str,
     zombies: &ZombiesCatalog,
     plants: &PlantsCatalog,
+    armors: &ArmorsCatalog,
 ) -> LevelDef {
-    load_level_validated(level_id, zombies, plants).unwrap_or_else(|e| {
+    load_level_validated(level_id, zombies, plants, armors).unwrap_or_else(|e| {
         panic!("关卡 {level_id} 加载/校验失败: {e}");
     })
 }

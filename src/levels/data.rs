@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 
+use crate::armors::ArmorArchetypeOverride;
 use crate::plants::PlantArchetypeOverride;
 use crate::zombies::{ZombieArchetypeStats, ZombieType};
 
@@ -26,6 +27,9 @@ pub struct LevelDef {
     /// 仅在本关覆盖 `plants.ron` 中对应种类的字段；未写的键保持全局默认。
     #[serde(default)]
     pub plant_overrides: Option<HashMap<String, PlantArchetypeOverride>>,
+    /// 仅在本关覆盖 `armor.ron` 中对应防具的 `hp`；未写的键保持全局默认。
+    #[serde(default)]
+    pub armor_overrides: Option<HashMap<String, ArmorArchetypeOverride>>,
 }
 
 impl LevelDef {
@@ -43,9 +47,7 @@ impl LevelDef {
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ZombieArchetypeOverride {
     #[serde(default)]
-    pub tier2_armor_hp: Option<f32>,
-    #[serde(default)]
-    pub tier1_armor_hp: Option<f32>,
+    pub armor: Option<String>,
     #[serde(default)]
     pub body_hp: Option<f32>,
     #[serde(default)]
@@ -53,9 +55,9 @@ pub struct ZombieArchetypeOverride {
     #[serde(default)]
     pub secs_per_cell_max: Option<f64>,
     #[serde(default)]
-    pub post_vault_secs_per_cell_min: Option<f64>,
+    pub state_secs_per_cell_min: Option<f64>,
     #[serde(default)]
-    pub post_vault_secs_per_cell_max: Option<f64>,
+    pub state_secs_per_cell_max: Option<f64>,
     #[serde(default)]
     pub attack_damage: Option<f32>,
     #[serde(default)]
@@ -81,11 +83,8 @@ impl ZombieArchetypeOverride {
     #[must_use]
     pub fn apply_to(&self, base: &ZombieArchetypeStats) -> ZombieArchetypeStats {
         let mut s = base.clone();
-        if let Some(v) = self.tier2_armor_hp {
-            s.tier2_armor_hp = Some(v);
-        }
-        if let Some(v) = self.tier1_armor_hp {
-            s.tier1_armor_hp = Some(v);
+        if let Some(ref v) = self.armor {
+            s.armor = Some(v.clone());
         }
         macro_rules! set {
             ($field:ident) => {
@@ -97,11 +96,11 @@ impl ZombieArchetypeOverride {
         set!(body_hp);
         set!(secs_per_cell_min);
         set!(secs_per_cell_max);
-        if let Some(v) = self.post_vault_secs_per_cell_min {
-            s.post_vault_secs_per_cell_min = Some(v);
+        if let Some(v) = self.state_secs_per_cell_min {
+            s.state_secs_per_cell_min = Some(v);
         }
-        if let Some(v) = self.post_vault_secs_per_cell_max {
-            s.post_vault_secs_per_cell_max = Some(v);
+        if let Some(v) = self.state_secs_per_cell_max {
+            s.state_secs_per_cell_max = Some(v);
         }
         set!(attack_damage);
         set!(attack_interval);

@@ -10,6 +10,7 @@ mod states;
 use crate::states::GameState;
 
 mod animations;
+mod armors;
 mod audio;
 mod grid;
 mod levels;
@@ -21,6 +22,7 @@ mod ui;
 mod zombies;
 
 use animations::AnimationsPlugin;
+use armors::ArmorsPlugin;
 use game_config::GameConfigPlugin;
 use audio::AudioPlugin;
 use loading::LoadingPlugin;
@@ -73,6 +75,7 @@ fn main() {
         .add_plugins(LoadingPlugin)
         .add_plugins(GameConfigPlugin)
         .add_plugins((
+            ArmorsPlugin,
             GridPlugin,
             PlantsPlugin,
             ZombiesPlugin,

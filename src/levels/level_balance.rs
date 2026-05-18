@@ -1,5 +1,6 @@
-//! 关卡对 `zombies.ron` / `plants.ron` 的局部覆盖、合并与校验。
+//! 关卡对 `zombies.ron` / `plants.ron` / `armor.ron` 的局部覆盖、合并与校验。
 
+use crate::armors::{validate_armor_archetype, ArmorArchetypeStats, ArmorType, ArmorsCatalog};
 use crate::levels::data::LevelDef;
 use crate::plants::{validate_plant_archetype, PlantType, PlantsCatalog};
 use crate::zombies::{validate_zombie_archetype, ZombieArchetypeStats, ZombieType, ZombiesCatalog};
@@ -13,6 +14,22 @@ pub fn effective_zombie_stats(
 ) -> Option<ZombieArchetypeStats> {
     let base = catalog.get(ty)?;
     let merged = match level.zombie_overrides.as_ref().and_then(|m| m.get(ty.ron_key())) {
+        Some(ov) => ov.apply_to(base),
+        None => base.clone(),
+    };
+    Some(merged)
+}
+
+/// 合并 `armor.ron` 与关卡覆盖后的防具配置（本关有效）。
+#[allow(dead_code)]
+#[must_use]
+pub fn effective_armor_stats(
+    catalog: &ArmorsCatalog,
+    level: &LevelDef,
+    ty: ArmorType,
+) -> Option<ArmorArchetypeStats> {
+    let base = catalog.get(ty)?;
+    let merged = match level.armor_overrides.as_ref().and_then(|m| m.get(ty.ron_key())) {
         Some(ov) => ov.apply_to(base),
         None => base.clone(),
     };
@@ -60,11 +77,12 @@ impl EffectiveSpawnParams {
     }
 }
 
-/// 加载关卡后校验池、覆盖键名及合并后僵尸数值合法。
+/// 加载关卡后校验池、覆盖键名及合并后僵尸/植物/防具数值合法。
 pub fn validate_level_balance_config(
     level: &LevelDef,
     zombies: &ZombiesCatalog,
     plants: &PlantsCatalog,
+    armors: &ArmorsCatalog,
 ) {
     if let Some(pool) = &level.zombie_pool {
         assert!(
@@ -88,7 +106,7 @@ pub fn validate_level_balance_config(
                 .get(ty)
                 .unwrap_or_else(|| panic!("zombie_overrides 键 {key} 须在 zombies.ron 中存在"));
             let merged = ov.apply_to(base);
-            validate_zombie_archetype(ty, &merged);
+            validate_zombie_archetype(ty, &merged, armors);
         }
     }
 
@@ -101,6 +119,18 @@ pub fn validate_level_balance_config(
                 .unwrap_or_else(|| panic!("plant_overrides 键 {key} 须在 plants.ron 中存在"));
             let merged = ov.apply_to(base);
             validate_plant_archetype(ty, &merged);
+        }
+    }
+
+    if let Some(overrides) = &level.armor_overrides {
+        for (key, ov) in overrides {
+            assert_known_armor_key(key, "armor_overrides");
+            let ty = armor_type_from_key(key);
+            let base = armors
+                .get(ty)
+                .unwrap_or_else(|| panic!("armor_overrides 键 {key} 须在 armor.ron 中存在"));
+            let merged = ov.apply_to(base);
+            validate_armor_archetype(ty, &merged);
         }
     }
 }
@@ -119,6 +149,13 @@ fn assert_known_plant_key(key: &str, context: &str) {
     );
 }
 
+fn assert_known_armor_key(key: &str, context: &str) {
+    assert!(
+        ArmorType::ALL.iter().any(|ty| ty.ron_key() == key),
+        "{context} 含未知防具键 {key}（须与 armor.ron / ArmorType 一致）"
+    );
+}
+
 fn zombie_type_from_key(key: &str) -> ZombieType {
     ZombieType::ALL
         .iter()
@@ -133,4 +170,12 @@ fn plant_type_from_key(key: &str) -> PlantType {
         .copied()
         .find(|ty| ty.ron_key() == key)
         .unwrap_or_else(|| panic!("内部错误：未解析植物键 {key}"))
+}
+
+fn armor_type_from_key(key: &str) -> ArmorType {
+    ArmorType::ALL
+        .iter()
+        .copied()
+        .find(|ty| ty.ron_key() == key)
+        .unwrap_or_else(|| panic!("内部错误：未解析防具键 {key}"))
 }
