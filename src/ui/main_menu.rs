@@ -48,7 +48,9 @@ fn exit_main_menu(mut commands: Commands) {
 
 /// 仅负责 egui 绘制；不直接改 [`NextState`] 或加载关卡。
 fn draw_main_menu_ui(mut contexts: EguiContexts, mut pending: ResMut<MainMenuPending>) {
-    let ctx = contexts.ctx_mut();
+    let Ok(ctx) = contexts.ctx_mut() else {
+        return;
+    };
     egui::CentralPanel::default().show(ctx, |ui| {
         ui.vertical_centered(|ui| {
             ui.add_space(48.0);
@@ -108,11 +110,11 @@ fn process_main_menu_actions(
     plants: Res<PlantsCatalog>,
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
-    mut exit: EventWriter<AppExit>,
+    mut exit: MessageWriter<AppExit>,
 ) {
     if pending.request_exit {
         pending.request_exit = false;
-        exit.send(AppExit::Success);
+        exit.write(AppExit::Success);
         return;
     }
 

@@ -31,7 +31,7 @@ pub struct ZombieBodyHp {
 
 /// 垂死状态每秒扣血（与植物伤害独立叠加）。
 pub fn apply_dying_drain(time: Res<Time>, config: Res<GameConfig>, mut query: Query<&mut ZombieBodyHp>) {
-    let delta = config.dying_drain_hp_per_sec * time.delta_seconds();
+    let delta = config.dying_drain_hp_per_sec * time.delta_secs();
     if delta <= 0.0 {
         return;
     }

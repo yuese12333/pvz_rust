@@ -44,7 +44,7 @@ struct DisplayConfig {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 }
 
 fn main() {
@@ -58,13 +58,17 @@ fn main() {
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
                     title: display.window_title,
-                    resolution: (display.window_width, display.window_height).into(),
+                    resolution: (
+                        display.window_width.round() as u32,
+                        display.window_height.round() as u32,
+                    )
+                        .into(),
                     ..default()
                 }),
                 ..default()
             }),
         )
-        .add_plugins(EguiPlugin)
+        .add_plugins(EguiPlugin::default())
         .init_state::<GameState>()
         .add_plugins(LoadingPlugin)
         .add_plugins(GameConfigPlugin)

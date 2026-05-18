@@ -32,7 +32,9 @@ fn draw_playing_placeholder_ui(
     progress: Res<AdventureProgress>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    let ctx = contexts.ctx_mut();
+    let Ok(ctx) = contexts.ctx_mut() else {
+        return;
+    };
     egui::TopBottomPanel::top("playing_placeholder_hud").show(ctx, |ui| {
         ui.horizontal(|ui| {
             ui.label(format!("Level: {}", progress.current_level));

@@ -1,6 +1,6 @@
 //! 出怪点数（`score`）与权重（`weight`）、最早波次（`min_wave`）协同的抽取逻辑。
 
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 use crate::levels::data::LevelDef;
 use crate::levels::level_balance::{effective_spawn_params, EffectiveSpawnParams};
@@ -61,7 +61,7 @@ pub fn pick_weighted_spawn_kind<R: Rng + ?Sized>(
     if total == 0 {
         return None;
     }
-    let mut r = rng.gen_range(0..total);
+    let mut r = rng.random_range(0..total);
     for (ty, p) in &pool {
         let w = p.weight as u64;
         if r < w {

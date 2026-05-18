@@ -105,7 +105,7 @@ fn draw_loading_progress_ui(
     loading: Res<LoadingAssets>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let Ok(window) = windows.get_single() else {
+    let Ok(window) = windows.single() else {
         return;
     };
     let total = loading.total();
@@ -117,7 +117,9 @@ fn draw_loading_progress_ui(
     };
     let percent = (fraction * 100.0).round();
 
-    let ctx = contexts.ctx_mut();
+    let Ok(ctx) = contexts.ctx_mut() else {
+        return;
+    };
     egui::Area::new(egui::Id::new("loading_progress"))
         .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
         .show(ctx, |ui| {
@@ -141,7 +143,12 @@ fn draw_loading_progress_ui(
                 if fill.width() > 0.0 {
                     painter.rect_filled(fill, 4.0, egui::Color32::from_rgb(72, 160, 88));
                 }
-                painter.rect_stroke(rect, 4.0, egui::Stroke::new(1.0, egui::Color32::from_gray(120)));
+                painter.rect_stroke(
+                    rect,
+                    4.0,
+                    egui::Stroke::new(1.0, egui::Color32::from_gray(120)),
+                    egui::StrokeKind::Outside,
+                );
             });
         });
 }
