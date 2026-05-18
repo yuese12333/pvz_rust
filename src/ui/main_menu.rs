@@ -1,6 +1,7 @@
 //! 主菜单 egui 界面与状态跳转（渲染与逻辑分离，便于日后替换布局）。
 
 use bevy::app::AppExit;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
@@ -103,13 +104,19 @@ fn draw_main_menu_ui(mut contexts: EguiContexts, mut pending: ResMut<MainMenuPen
     });
 }
 
+/// 关卡加载所需的数值目录（合并为 [`SystemParam`]，避免系统参数过多）。
+#[derive(SystemParam)]
+struct LevelDataCatalogs<'w> {
+    zombies: Res<'w, ZombiesCatalog>,
+    plants: Res<'w, PlantsCatalog>,
+    armors: Res<'w, ArmorsCatalog>,
+}
+
 /// 消费 [`MainMenuPending`]：加载关卡、切换状态、退出应用。
 fn process_main_menu_actions(
     mut pending: ResMut<MainMenuPending>,
     progress: Res<AdventureProgress>,
-    zombies: Res<ZombiesCatalog>,
-    plants: Res<PlantsCatalog>,
-    armors: Res<ArmorsCatalog>,
+    catalogs: LevelDataCatalogs,
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
     mut exit: MessageWriter<AppExit>,
@@ -128,9 +135,9 @@ fn process_main_menu_actions(
     let level_id = progress.current_level.clone();
     let level = match load_level_validated(
         &level_id,
-        zombies.as_ref(),
-        plants.as_ref(),
-        armors.as_ref(),
+        catalogs.zombies.as_ref(),
+        catalogs.plants.as_ref(),
+        catalogs.armors.as_ref(),
     ) {
         Ok(def) => def,
         Err(e) => {

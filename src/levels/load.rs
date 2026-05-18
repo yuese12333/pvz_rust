@@ -43,7 +43,7 @@ pub fn load_level_manifest(level_id: &str) -> Result<LevelDef, LoadLevelError> {
     let path = level_manifest_path(level_id);
     let def: LevelDef = game_data::load_ron(&path).map_err(|e| LoadLevelError::Ron {
         path: path.clone(),
-        message: format!("{e}"),
+        message: e.to_string(),
     })?;
     if def.background.is_empty() {
         return Err(LoadLevelError::EmptyBackground {
