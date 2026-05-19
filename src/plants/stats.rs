@@ -3,7 +3,11 @@
 use serde::Deserialize;
 
 use crate::plants::targeting::PlantTargeting;
+use crate::plants::traits::{validate_trait_fields, PlantTrait};
 use crate::plants::PlantType;
+
+/// `explosion_radius_cells` 取该值时表示全屏生效范围（与樱桃炸弹等「圆半径」区分）。
+pub const EXPLOSION_RADIUS_FULL_SCREEN: f32 = -1.0;
 
 /// 单种植物在 `plants.ron` 中的条目（各植物字段不同，未用字段省略）。
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
@@ -49,18 +53,21 @@ pub struct PlantArchetypeStats {
     pub swallow_instakill: bool,
     #[serde(default)]
     pub digest_duration_secs: f64,
+    /// 墓碑吞噬者：啃完墓碑所需时间（秒）。
+    #[serde(default)]
+    pub grave_digest_secs: f64,
     #[serde(default)]
     pub swallow_fail_damage: f32,
     #[serde(default)]
-    pub slow_duration: f64,
+    pub traits: Vec<PlantTrait>,
     #[serde(default)]
-    pub slow_factor: f32,
+    pub slow_duration: Option<f32>,
+    #[serde(default)]
+    pub slow_factor: Option<f32>,
     #[serde(default)]
     pub cracked1_threshold: f32,
     #[serde(default)]
     pub cracked2_threshold: f32,
-    #[serde(default)]
-    pub low_profile: bool,
     #[serde(default)]
     pub shoot_timer_repeating: bool,
     pub sprite_dir: String,
@@ -73,6 +80,14 @@ pub struct PlantArchetypeStats {
     pub size: (f32, f32),
     #[serde(default)]
     pub spawn_z: f32,
+}
+
+impl PlantArchetypeStats {
+    /// 是否具备指定特性。
+    #[must_use]
+    pub fn has_trait(&self, trait_: PlantTrait) -> bool {
+        self.traits.contains(&trait_)
+    }
 }
 
 macro_rules! de_override_field {
@@ -118,10 +133,14 @@ pub struct PlantArchetypeOverride {
     pub sun_yield: Option<u32>,
     #[serde(default, deserialize_with = "de_opt_f32")]
     pub explosion_damage: Option<f32>,
-    #[serde(default, deserialize_with = "de_opt_f64")]
-    pub slow_duration: Option<f64>,
+    #[serde(default, deserialize_with = "de_opt_f32")]
+    pub slow_duration: Option<f32>,
     #[serde(default, deserialize_with = "de_opt_f32")]
     pub slow_factor: Option<f32>,
+    #[serde(default, deserialize_with = "de_opt_f64")]
+    pub grave_digest_secs: Option<f64>,
+    #[serde(default)]
+    pub traits: Option<Vec<PlantTrait>>,
 }
 
 impl PlantArchetypeOverride {
@@ -146,8 +165,16 @@ impl PlantArchetypeOverride {
         set!(produce_interval);
         set!(sun_yield);
         set!(explosion_damage);
-        set!(slow_duration);
-        set!(slow_factor);
+        set!(grave_digest_secs);
+        if let Some(v) = self.slow_duration {
+            s.slow_duration = Some(v);
+        }
+        if let Some(v) = self.slow_factor {
+            s.slow_factor = Some(v);
+        }
+        if let Some(traits) = &self.traits {
+            s.traits = traits.clone();
+        }
         if let Some(t) = self.targeting {
             s.targeting = Some(t);
         }
@@ -183,6 +210,41 @@ fn forbid_targeting(key: &str, targeting: Option<PlantTargeting>) {
     }
 }
 
+fn require_explosion_damage(key: &str, damage: f32) {
+    if damage <= 0.0 {
+        panic!("{key} 的 explosion_damage 须 > 0");
+    }
+}
+
+fn require_explosion_radius_local(key: &str, radius: f32) {
+    if !radius.is_finite() || radius <= 0.0 {
+        panic!("{key} 的 explosion_radius_cells 须为有限正数（局部圆形半径，格）");
+    }
+}
+
+fn require_explosion_radius_full_screen(key: &str, radius: f32) {
+    if (radius - EXPLOSION_RADIUS_FULL_SCREEN).abs() > f32::EPSILON {
+        panic!(
+            "{key} 全屏范围须 explosion_radius_cells = {}（EXPLOSION_RADIUS_FULL_SCREEN）",
+            EXPLOSION_RADIUS_FULL_SCREEN
+        );
+    }
+}
+
+fn validate_grave_digest_field(key: &str, ty: PlantType, grave_digest_secs: f64) {
+    match ty {
+        PlantType::GraveBuster => {
+            if grave_digest_secs <= 0.0 {
+                panic!("{key} 的 grave_digest_secs 须 > 0");
+            }
+        }
+        _ if grave_digest_secs > 0.0 => {
+            panic!("{key} 不应配置 grave_digest_secs");
+        }
+        _ => {}
+    }
+}
+
 pub(crate) fn validate_plant_entry(ty: PlantType, stats: &PlantArchetypeStats) {
     let key = ty.ron_key();
     if stats.health <= 0.0 {
@@ -197,10 +259,13 @@ pub(crate) fn validate_plant_entry(ty: PlantType, stats: &PlantArchetypeStats) {
 
     let targeting = stats.targeting;
     match ty {
-        PlantType::Peashooter | PlantType::SnowPea | PlantType::Repeater => {
+        PlantType::Peashooter
+        | PlantType::SnowPea
+        | PlantType::Repeater
+        | PlantType::ScaredyShroom => {
             require_targeting_variant(key, targeting, |t| t == PlantTargeting::LaneForward, "LaneForward");
         }
-        PlantType::PuffShroom | PlantType::Chomper => {
+        PlantType::PuffShroom | PlantType::Chomper | PlantType::FumeShroom => {
             require_targeting_variant(
                 key,
                 targeting,
@@ -218,9 +283,28 @@ pub(crate) fn validate_plant_entry(ty: PlantType, stats: &PlantArchetypeStats) {
         }
         PlantType::CherryBomb => {
             require_targeting_variant(key, targeting, |t| t == PlantTargeting::Area3x3, "Area3x3");
+            require_explosion_damage(key, stats.explosion_damage);
+            require_explosion_radius_local(key, stats.explosion_radius_cells);
         }
-        PlantType::Sunflower | PlantType::WallNut | PlantType::SunShroom => {
+        PlantType::IceShroom => {
+            forbid_targeting(key, targeting);
+            require_explosion_damage(key, stats.explosion_damage);
+            require_explosion_radius_full_screen(key, stats.explosion_radius_cells);
+        }
+        PlantType::DoomShroom => {
+            forbid_targeting(key, targeting);
+            require_explosion_damage(key, stats.explosion_damage);
+            require_explosion_radius_local(key, stats.explosion_radius_cells);
+        }
+        PlantType::Sunflower
+        | PlantType::WallNut
+        | PlantType::SunShroom
+        | PlantType::HypnoShroom
+        | PlantType::GraveBuster => {
             forbid_targeting(key, targeting);
         }
     }
+
+    validate_grave_digest_field(key, ty, stats.grave_digest_secs);
+    validate_trait_fields(key, stats);
 }

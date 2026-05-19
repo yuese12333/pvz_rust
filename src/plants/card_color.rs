@@ -19,6 +19,12 @@ pub fn plant_card_color(ty: PlantType) -> egui::Color32 {
         PlantType::Repeater => egui::Color32::from_rgb(46, 158, 56),
         PlantType::PuffShroom => egui::Color32::from_rgb(199, 140, 224),
         PlantType::SunShroom => egui::Color32::from_rgb(224, 158, 89),
+        PlantType::FumeShroom => egui::Color32::from_rgb(140, 158, 184),
+        PlantType::GraveBuster => egui::Color32::from_rgb(118, 118, 128),
+        PlantType::HypnoShroom => egui::Color32::from_rgb(186, 72, 186),
+        PlantType::ScaredyShroom => egui::Color32::from_rgb(210, 175, 220),
+        PlantType::IceShroom => egui::Color32::from_rgb(120, 200, 235),
+        PlantType::DoomShroom => egui::Color32::from_rgb(55, 38, 72),
     }
 }
 

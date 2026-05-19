@@ -4,10 +4,15 @@ pub mod card_color;
 pub mod plugin;
 pub mod stats;
 pub mod targeting;
+pub mod traits;
 
 pub use card_color::{plant_card_color, plant_sprite_color};
 pub use plugin::PlantsPlugin;
-pub use stats::{validate_plant_archetype, PlantArchetypeOverride, PlantArchetypeStats};
+pub use stats::{
+    validate_plant_archetype, PlantArchetypeOverride, PlantArchetypeStats,
+    EXPLOSION_RADIUS_FULL_SCREEN,
+};
+pub use traits::PlantTrait;
 
 /// 已种植在草坪格子上的实体标记。
 #[derive(Component, Debug, Clone, Copy)]
@@ -42,11 +47,23 @@ pub enum PlantType {
     PuffShroom,
     /// #10 阳光菇。
     SunShroom,
+    /// #11 大喷菇。
+    FumeShroom,
+    /// #12 墓碑吞噬者。
+    GraveBuster,
+    /// #13 魅惑菇。
+    HypnoShroom,
+    /// #14 胆小菇。
+    ScaredyShroom,
+    /// #15 寒冰菇。
+    IceShroom,
+    /// #16 毁灭菇。
+    DoomShroom,
 }
 
 impl PlantType {
     /// 代码中登记的植物种类，用于启动时校验 `plants.ron` 键齐全。
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 16] = [
         Self::Peashooter,
         Self::Sunflower,
         Self::CherryBomb,
@@ -57,6 +74,12 @@ impl PlantType {
         Self::Repeater,
         Self::PuffShroom,
         Self::SunShroom,
+        Self::FumeShroom,
+        Self::GraveBuster,
+        Self::HypnoShroom,
+        Self::ScaredyShroom,
+        Self::IceShroom,
+        Self::DoomShroom,
     ];
 
     /// 由 RON 键名解析；未知键返回 `None`。
@@ -79,6 +102,12 @@ impl PlantType {
             Self::Repeater => "Repeater",
             Self::PuffShroom => "PuffShroom",
             Self::SunShroom => "SunShroom",
+            Self::FumeShroom => "FumeShroom",
+            Self::GraveBuster => "GraveBuster",
+            Self::HypnoShroom => "HypnoShroom",
+            Self::ScaredyShroom => "ScaredyShroom",
+            Self::IceShroom => "IceShroom",
+            Self::DoomShroom => "DoomShroom",
         }
     }
 }
