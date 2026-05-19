@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy::audio::AudioSource;
 use bevy::text::Font;
 use bevy::window::PrimaryWindow;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{egui, EguiContexts, EguiPrimaryContextPass};
 use walkdir::WalkDir;
 
 use crate::loading::ron_asset::{RonBytesAsset, RonBytesAssetLoader};
@@ -49,12 +49,11 @@ impl Plugin for LoadingPlugin {
             .add_systems(OnEnter(GameState::Loading), begin_loading)
             .add_systems(
                 Update,
-                (
-                    update_loading_progress,
-                    draw_loading_progress_ui,
-                )
-                    .chain()
-                    .run_if(in_state(GameState::Loading)),
+                update_loading_progress.run_if(in_state(GameState::Loading)),
+            )
+            .add_systems(
+                EguiPrimaryContextPass,
+                draw_loading_progress_ui.run_if(in_state(GameState::Loading)),
             )
             .add_systems(OnExit(GameState::Loading), cleanup_loading);
     }
@@ -69,9 +68,7 @@ fn begin_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     for rel in paths {
         let handle: UntypedHandle = match rel.rsplit_once('.') {
-            Some((_, "png")) => asset_server
-                .load::<Image>(format!("{rel}#image/png"))
-                .untyped(),
+            Some((_, "png")) => asset_server.load::<Image>(rel.clone()).untyped(),
             Some((_, "ogg")) => asset_server.load::<AudioSource>(rel.clone()).untyped(),
             Some((_, "ttf")) => asset_server.load::<Font>(rel.clone()).untyped(),
             Some((_, "ron")) => asset_server.load::<RonBytesAsset>(rel.clone()).untyped(),

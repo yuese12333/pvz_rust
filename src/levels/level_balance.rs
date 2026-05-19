@@ -2,7 +2,7 @@
 
 use crate::armors::{validate_armor_archetype, ArmorArchetypeStats, ArmorType, ArmorsCatalog};
 use crate::levels::data::LevelDef;
-use crate::plants::{validate_plant_archetype, PlantType, PlantsCatalog};
+use crate::plants::{validate_plant_archetype, PlantArchetypeStats, PlantType, PlantsCatalog};
 use crate::zombies::{validate_zombie_archetype, ZombieArchetypeStats, ZombieType, ZombiesCatalog};
 
 /// 合并 `zombies.ron` 与关卡覆盖后的完整僵尸数值（本关有效）。
@@ -36,8 +36,20 @@ pub fn effective_armor_stats(
     Some(merged)
 }
 
-// /// 合并 `plants.ron` 与关卡覆盖后的植物配置（本关有效）。
-// pub fn effective_plant_stats(...) -> Option<PlantArchetypeStats> { ... }
+/// 合并 `plants.ron` 与关卡覆盖后的植物配置（本关有效）。
+#[must_use]
+pub fn effective_plant_stats(
+    catalog: &PlantsCatalog,
+    level: &LevelDef,
+    ty: PlantType,
+) -> Option<PlantArchetypeStats> {
+    let base = catalog.get(ty)?;
+    let merged = match level.plant_overrides.as_ref().and_then(|m| m.get(ty.ron_key())) {
+        Some(ov) => ov.apply_to(base),
+        None => base.clone(),
+    };
+    Some(merged)
+}
 
 /// 解析某僵尸在本关的有效出怪参数；不在 `zombie_pool` 时返回 `None`。
 #[must_use]

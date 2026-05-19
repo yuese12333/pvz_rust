@@ -3,7 +3,7 @@
 use bevy::app::AppExit;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{egui, EguiContexts, EguiPrimaryContextPass};
 
 use crate::armors::ArmorsCatalog;
 use crate::levels::load::load_level_validated;
@@ -24,7 +24,7 @@ pub fn register(app: &mut App) {
     app.add_systems(OnEnter(GameState::MainMenu), enter_main_menu)
         .add_systems(OnExit(GameState::MainMenu), exit_main_menu)
         .add_systems(
-            Update,
+            EguiPrimaryContextPass,
             (
                 draw_main_menu_ui,
                 process_main_menu_actions,
@@ -152,5 +152,5 @@ fn process_main_menu_actions(
         level.waves.len()
     );
     commands.insert_resource(CurrentLevel { inner: level });
-    next_state.set(GameState::Playing);
+    next_state.set(GameState::CardSelect);
 }

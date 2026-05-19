@@ -1,7 +1,7 @@
 //! `Playing` 状态占位 UI 与进入关卡日志（正式 HUD / 网格接入前）。
 
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{egui, EguiContexts, EguiPrimaryContextPass};
 
 use crate::levels::CurrentLevel;
 use crate::states::GameState;
@@ -11,7 +11,7 @@ use crate::levels::AdventureProgress;
 pub fn register(app: &mut App) {
     app.add_systems(OnEnter(GameState::Playing), log_enter_playing)
         .add_systems(
-            Update,
+            EguiPrimaryContextPass,
             draw_playing_placeholder_ui.run_if(in_state(GameState::Playing)),
         );
 }
@@ -28,18 +28,18 @@ fn log_enter_playing(level: Res<CurrentLevel>, progress: Res<AdventureProgress>)
 /// 占位 HUD：显示关卡 id 与返回主菜单（后续由贴图 / 正式 UI 替换）。
 fn draw_playing_placeholder_ui(
     mut contexts: EguiContexts,
-    level: Res<CurrentLevel>,
+    _level: Res<CurrentLevel>,
     progress: Res<AdventureProgress>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else {
         return;
     };
-    egui::TopBottomPanel::top("playing_placeholder_hud").show(ctx, |ui| {
+    egui::TopBottomPanel::bottom("playing_placeholder_hud").show(ctx, |ui| {
         ui.horizontal(|ui| {
             ui.label(format!("Level: {}", progress.current_level));
             ui.separator();
-            ui.label(format!("Initial Sun: {}", level.inner.initial_sun));
+            ui.label("(Sun shown in seed bar)");
             ui.separator();
             ui.label("(Gameplay WIP)");
             if ui.button("Back to Menu").clicked() {

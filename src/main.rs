@@ -11,6 +11,7 @@ use crate::states::GameState;
 
 mod animations;
 mod armors;
+mod card_select;
 mod audio;
 mod grid;
 mod levels;
@@ -23,6 +24,7 @@ mod zombies;
 
 use animations::AnimationsPlugin;
 use armors::ArmorsPlugin;
+use card_select::CardSelectPlugin;
 use game_config::GameConfigPlugin;
 use audio::AudioPlugin;
 use loading::LoadingPlugin;
@@ -81,6 +83,7 @@ fn main() {
             ZombiesPlugin,
             ProjectilesPlugin,
             SunPlugin,
+            CardSelectPlugin,
             ShopPlugin,
             AnimationsPlugin,
             LevelsPlugin,

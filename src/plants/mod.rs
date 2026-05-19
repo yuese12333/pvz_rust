@@ -1,11 +1,17 @@
 //! 植物数据层：与 `mechanics_and_values.md` 及 `assets/data/plants.ron` 对齐。
 
+pub mod card_color;
 pub mod plugin;
 pub mod stats;
 pub mod targeting;
 
+pub use card_color::{plant_card_color, plant_sprite_color};
 pub use plugin::PlantsPlugin;
 pub use stats::{validate_plant_archetype, PlantArchetypeOverride, PlantArchetypeStats};
+
+/// 已种植在草坪格子上的实体标记。
+#[derive(Component, Debug, Clone, Copy)]
+pub struct Plant;
 // pub use targeting::PlantTargeting;
 
 use std::collections::HashMap;
@@ -14,7 +20,7 @@ use bevy::prelude::*;
 use stats::validate_plant_entry;
 
 /// 植物类型（与 `assets/data/plants.ron` 键名一致）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlantType {
     /// #1 豌豆射手。
     Peashooter,
@@ -52,6 +58,12 @@ impl PlantType {
         Self::PuffShroom,
         Self::SunShroom,
     ];
+
+    /// 由 RON 键名解析；未知键返回 `None`。
+    #[must_use]
+    pub fn from_ron_key(key: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|ty| ty.ron_key() == key)
+    }
 
     /// RON 中的字符串键名。
     #[must_use]

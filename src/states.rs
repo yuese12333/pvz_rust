@@ -9,6 +9,7 @@ pub enum GameState {
     #[default]
     Loading,
     MainMenu,
+    CardSelect,
     Playing,
     Paused,
     Victory,

@@ -1,0 +1,16 @@
+(
+    cols: 11,
+    rows: 5,
+    cell_width: 80.0,
+    cell_height: 100.0,
+    origin: (-520.0, -310.0),
+    row_colors: [
+        (0.28, 0.58, 0.22),
+        (0.24, 0.52, 0.19),
+    ],
+    lawnmower_column_color: (0.42, 0.44, 0.48),
+    zombie_spawn_column_color: (0.16, 0.20, 0.26),
+    grid_line_color: (0.14, 0.32, 0.12),
+    grid_line_width: 2.0,
+    background_fallback_color: (0.20, 0.45, 0.18),
+)
